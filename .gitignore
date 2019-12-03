@@ -1,0 +1,9 @@
+__pycache__/
+
+.vscode/
+.scrapy/
+build/
+dbs/
+eggs/
+project.egg-info/
+data_files/
