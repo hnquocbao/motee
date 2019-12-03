@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 import scrapy
 import re
 import json
 from scrapy.loader import ItemLoader
 from moteefe.items import MoteefeItem
 
-class MoteSpider(scrapy.Spider):
-    name = 'mote'
-    product_count = 0
 
+class OneItemSpider(scrapy.Spider):
+    name = 'mote_one'
     headers = {
         'Connection': 'keep-alive',
         'Cache-Control': 'max-age=0',
@@ -24,48 +22,14 @@ class MoteSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        urls = ['https://www.moteefe.com/store/gefm/?locale=de&user_currency=EUR']
-        for url in urls:
-            yield scrapy.Request(
-                url,
-                headers=self.headers,
-                callback=self.parse_first_page
-            )
-
-    def parse_first_page(self, response):
-        product_list_data = response.xpath("//script[@class='js-react-on-rails-component']/text()").get()
-        product_list_data_json = json.loads(product_list_data)
-
-        campaigns_count = product_list_data_json.get('state').get('store').get('campaigns_count')
-
-        loop_count = 0
-        if float(campaigns_count/16).is_integer():
-            loop_count = campaigns_count/16
-        else:
-            loop_count = int(campaigns_count/16)+1
-
-        for i in range(loop_count):
-            offset = 16 * i 
-            url = 'https://www.moteefe.com/api/v1/stores/3154/campaigns.json?currency=EUR&limit=16&offset={0}'.format(offset)
-            yield scrapy.Request(
-                url,
-                headers=self.headers,
-                callback=self.parse_product_list
-            )
-
-    def parse_product_list(self, response):
-        product_list = json.loads(response.body)
-
-        for product in product_list:
-            slug = product.get('slug')
-            url = 'https://www.moteefe.com/store/gefm/{0}?locale=de'.format(slug)
-            yield scrapy.Request(
-                url,
-                headers=self.headers,
-                callback=self.parse_detail
-            )
-
-    def parse_detail(self, response):
+        url = "file:///home/baoha/moteefe/data_files/moteefe_item.html"
+        yield scrapy.Request(
+            url,
+            headers=self.headers,
+            callback=self.parse
+        )
+    
+    def parse(self, response):
         products = []
 
         local_resources_json = re.findall("window.localeResources =(.+?);\n", response.body.decode("utf-8"), re.S)
