@@ -45,48 +45,53 @@ class OneItemSpider(scrapy.Spider):
         campaign_products = product_list_json.get('state').get('page').get('campaign_products')
         campaign_mockups = product_list_json.get('state').get('page').get('campaign_mockups')
 
+        product_name = product_list_json.get('state').get('page').get('campaign').get('name')
+        product_handle = product_list_json.get('state').get('page').get('campaign').get('slug')
+ 
         for product_main in campaign_products:
             product_main_id = product_main.get('product_id')
+            reset = True
             for product_references in product_list:
                 if product_references.get('id') == product_main_id:
                     for color_id in product_main.get('color_ids'):
                         for color in product_references.get('colors'):
                             if color_id == color.get('id'):
-                                for index, size in enumerate(product_references.get('sizes'), start=0):
+                                for size in product_references.get('sizes'):
                                     loader = ItemLoader(item=MoteefeItem())
                                     loader.add_value('Variant_Price', str(product_main.get('price')))
                                     loader.add_value('Variant_Compare_At_Price', str(product_main.get('pre_discounted_price')))
-                                    loader.add_value('Handle', product_references.get('slug'))
-                                    loader.add_value('Option_1_Name', "Color")
-                                    loader.add_value('Option_1_Value', color.get('name'))
-                                    loader.add_value('Option_2_Name', "Size")
-                                    loader.add_value('Option_2_Value', size.get('name'))
-                                    loader.add_value('Variant_SKU', product_references.get('slug')+"-"+color.get('name')+"-"+size.get('name'))
+                                    loader.add_value('Handle', product_handle)
+                                     # Get Type
+                                    loader.add_value('Type', "")
+                                    loader.add_value('Tags', "")
+                                     # Get Style
+                                    name = product_references.get('name')
+                                    aname = name.replace("common:products.names.", "")
+                                    loader.add_value('Option_1_Name', "Style")
+                                    loader.add_value('Option_1_Value', product_names.get(aname))
+                                    loader.add_value('Option_2_Name', "Color")
+                                    loader.add_value('Option_2_Value', color.get('name'))
+                                    loader.add_value('Option_3_Name', "Size")
+                                    loader.add_value('Option_3_Value', size.get('name'))
+                                    loader.add_value('Variant_SKU', product_handle +"-"+product_references.get('slug')+"-"+color.get('name')+"-"+size.get('name'))
                                     for campaign_mockup in campaign_mockups:
                                         if campaign_mockup.get('color_id') == color_id and campaign_mockup.get('product_id') == product_main_id and campaign_mockup.get('image'):
                                             loader.add_value('Variant_Image', campaign_mockup.get('image').get('big'))
                                             break
-
-                                    if index == 0:
-                                    # Get Title
-                                        name = product_references.get('name')
-                                        aname = name.replace("common:products.names.", "")
-                                        loader.add_value('Title', product_names.get(aname))
+                                    
+                                    if reset:
+                                        # Get Title
+                                        loader.add_value('Title', product_name)
                                         # Get description
                                         details = product_references.get('details')
                                         adetails = details.replace("common:products.descriptions.", "")
                                         loader.add_value('Body_HTML', product_descriptions.get(adetails))
-                                        # Get Type
-                                        loader.add_value('Type', product_references.get('tracking_name'))
-                                        loader.add_value('Tags', "")
                                         loader.add_value('Published', "TRUE")
-                                    else:
-                                        loader.add_value('Title', "")
-                                        loader.add_value('Body_HTML', "")
-                                        loader.add_value('Type', "")
-                                        loader.add_value('Tags', "")
-                                        loader.add_value('Published', "")
-
+                                        reset = False
+                                   
+                                    loader.add_value('Title', "")
+                                    loader.add_value('Body_HTML', "")
+                                    loader.add_value('Published', "")
                                     products.append(loader.load_item())
                         
        
